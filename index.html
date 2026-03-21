@@ -185,6 +185,7 @@
 <div class="card" id="screen-success" style="display:none;">
     <h2>Готово</h2>
     <p id="successText">Запись отправлена.</p>
+    <div class="summary" id="lastRecordBox" style="display:none;"></div>
     <button class="success" onclick="showMainFromStorage()">🏠 Главное меню</button>
 </div>
 
@@ -651,10 +652,28 @@
                 body: JSON.stringify(payload)
             });
 
-            hideAll();
-            document.getElementById("screen-success").style.display = "block";
-            document.getElementById("successText").innerText = "Запись отправлена.";
-            resetDraft();
+const lastRecord = {
+    center: getCurrentCenter(),
+    reason: state.reason,
+    minutes: state.minutes,
+    downtimeType: state.downtimeType
+};
+
+localStorage.setItem("last_record", JSON.stringify(lastRecord));
+
+hideAll();
+document.getElementById("screen-success").style.display = "block";
+document.getElementById("successText").innerText = "Запись отправлена.";
+
+const lastRecordBox = document.getElementById("lastRecordBox");
+lastRecordBox.style.display = "block";
+lastRecordBox.innerHTML =
+    "<b>Последняя запись:</b><br>" +
+    escapeHtml(lastRecord.center) + "<br>" +
+    escapeHtml(lastRecord.reason) + "<br>" +
+    escapeHtml(String(lastRecord.minutes)) + " мин";
+
+resetDraft();
 
             setTimeout(() => {
                 isSubmitting = false;
