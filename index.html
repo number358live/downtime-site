@@ -30,6 +30,7 @@
         p {
             line-height: 1.4;
             margin: 10px 0;
+            white-space: pre-line;
         }
 
         input, textarea {
@@ -114,8 +115,8 @@
 
 <div class="card" id="screen-login">
     <h2>Учет простоев</h2>
-    <p>Введите ФИО:</p>
-    <input id="nameInput" placeholder="Иванов Иван">
+    <p>Введите идентификатор:</p>
+    <input id="nameInput" placeholder="ФЛА">
     <button onclick="saveName()">Продолжить</button>
 </div>
 
@@ -132,6 +133,7 @@
 
     <button class="danger" onclick="openStandardReasons()">🛑 Стандартный простой</button>
     <button onclick="openCustomReasons()">✍️ Нестандартный простой</button>
+    <button class="secondary" onclick="openBadNorm()">📉 Некорректная норма</button>
 
     <button class="secondary" onclick="backToCenters()">🔁 Сменить РЦ</button>
     <button class="secondary" onclick="changeUser()">Сменить сотрудника</button>
@@ -160,6 +162,15 @@
     <button class="secondary" onclick="openCustomReasons()">⬅️ Назад</button>
 </div>
 
+<div class="card" id="screen-badnorm" style="display:none;">
+    <h2>Некорректная норма</h2>
+    <p id="badNormHeader"></p>
+    <p>Введите позицию или описание, где неправильная норма:</p>
+    <textarea id="badNormInput" placeholder="Например: S90 300*900*0,6 — неправильная норма"></textarea>
+    <button onclick="openBadNormConfirm()">Продолжить</button>
+    <button class="secondary" onclick="showMainFromStorage()">🏠 Главное меню</button>
+</div>
+
 <div class="card" id="screen-minutes" style="display:none;">
     <h2>Минуты</h2>
     <p id="minutesHeader"></p>
@@ -175,10 +186,10 @@
     <h2>Подтверждение</h2>
     <div class="summary" id="confirmSummary"></div>
 
-    <button class="success" id="submitBtn" onclick="submitDowntime()">✅ Подтвердить и отправить</button>
+    <button class="success" id="submitBtn" onclick="submitRecord()">✅ Подтвердить и отправить</button>
     <div id="sendingNote" class="sending-note">Подождите, запись отправляется...</div>
 
-    <button class="secondary" onclick="backToMinutes()">⬅️ Назад</button>
+    <button class="secondary" onclick="backFromConfirm()">⬅️ Назад</button>
     <button class="secondary" onclick="showMainFromStorage()">🏠 Главное меню</button>
 </div>
 
@@ -212,14 +223,14 @@
             "РЦ 3430 Лазер"
         ],
 
-        standard_reasons_default: [
+        standardReasonsDefault: [
             "Нет материала",
             "Поломка",
             "Нет задания",
             "Ожидание"
         ],
 
-        standard_reasons_by_center: {
+        standardReasonsByCenter: {
             "РЦ 3411 Окраска": ["ППР"],
             "РЦ 3412": ["Переход по толщине", "Переход по ширине", "ППР"],
             "РЦ 3413 Стам": ["Переход по толщине", "Переход по ширине", "Без погрузчика", "ППР"],
@@ -238,117 +249,117 @@
             "РЦ 3430": ["Перестройка", "ППР"]
         },
 
-        quick_minutes_default: [5, 10, 15, 30],
+        quickMinutesDefault: [5, 10, 15, 30],
 
-        quick_minutes_by_center: {
+        quickMinutesByCenter: {
             "РЦ 3411 Окраска": [3, 5, 10, 15, 20, 30]
         },
 
-        custom_reasons_by_center: {
+        customReasonsByCenter: {
             "РЦ 3411 Окраска": [
-                {"title": "Падение в сушке", "prompt": "Написать номер"},
-                {"title": "Падение в мойке", "prompt": "Написать номер"},
-                {"title": "Чистка пистолетов", "prompt": "Написать номер"},
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Падение в сушке", prompt: "Написать номер" },
+                { title: "Падение в мойке", prompt: "Написать номер" },
+                { title: "Чистка пистолетов", prompt: "Написать номер" },
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3412": [
-                {"title": "Настройка", "prompt": "Описать причину"},
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Настройка", prompt: "Описать причину" },
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3413 Стам": [
-                {"title": "Замена электродов", "prompt": ""},
-                {"title": "Замена ножа", "prompt": ""},
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Регулировка роботов", "prompt": ""},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Замена электродов", prompt: "" },
+                { title: "Замена ножа", prompt: "" },
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Регулировка роботов", prompt: "" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3415 Стяжки": [
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Маленькие рулоны", "prompt": ""},
-                {"title": "Маленькие пачки", "prompt": ""},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Маленькие рулоны", prompt: "" },
+                { title: "Маленькие пачки", prompt: "" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3416": [
-                {"title": "Настройка", "prompt": "Написать линию"},
-                {"title": "Перевод на другой РЦ", "prompt": "Описать причину"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Настройка", prompt: "Написать линию" },
+                { title: "Перевод на другой РЦ", prompt: "Описать причину" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3417": [
-                {"title": "Настройка", "prompt": "Написать линию"},
-                {"title": "Перевод на другой РЦ", "prompt": "Описать причину"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Настройка", prompt: "Написать линию" },
+                { title: "Перевод на другой РЦ", prompt: "Описать причину" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3418": [
-                {"title": "Настройка", "prompt": "Описать причину"},
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Настройка", prompt: "Описать причину" },
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3419": [
-                {"title": "Настройка", "prompt": "Описать причину"},
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Настройка", prompt: "Описать причину" },
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3421": [
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 34213": [
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3422": [
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3423": [
-                {"title": "Настройка", "prompt": "Описать причину"},
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Настройка", prompt: "Описать причину" },
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3424 Полки": [
-                {"title": "Настройка", "prompt": "Описать причину"},
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Настройка", prompt: "Описать причину" },
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3427": [
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3428": [
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ],
             "РЦ 3430": [
-                {"title": "Перевод на другой РЦ", "prompt": "Написать линию"},
-                {"title": "Ремонт", "prompt": "Описать причину"},
-                {"title": "Другое", "prompt": "Описать причину"}
+                { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+                { title: "Ремонт", prompt: "Описать причину" },
+                { title: "Другое", prompt: "Описать причину" }
             ]
         }
     };
 
     const state = {
-        downtimeType: null,
-        reason: null,
-        customTitle: null,
-        customPrompt: null,
-        customDetail: "",
-        minutes: null
+        mode: null,
+        reason: "",
+        minutes: "",
+        customTitle: "",
+        customPrompt: "",
+        badNormText: ""
     };
 
     let isSubmitting = false;
@@ -359,19 +370,20 @@
 
         resetDraft();
 
-        if (name) {
-            if (center) {
-                showMain(name, center);
-            } else {
-                showCenters(name);
-            }
+        if (!name) return;
+        if (!center) {
+            showCenters(name);
+            return;
         }
+
+        showMain(name, center);
     };
 
     function saveName() {
         const name = document.getElementById("nameInput").value.trim();
+
         if (!name) {
-            alert("Введите ФИО");
+            alert("Введите идентификатор");
             return;
         }
 
@@ -397,9 +409,8 @@
 
     function selectCenter(center) {
         localStorage.setItem("employee_center", center);
-        const name = localStorage.getItem("employee_name");
         resetDraft();
-        showMain(name, center);
+        showMain(getCurrentName(), center);
     }
 
     function showMain(name, center) {
@@ -410,9 +421,7 @@
 
     function showMainFromStorage() {
         resetDraft();
-        const name = localStorage.getItem("employee_name");
-        const center = localStorage.getItem("employee_center");
-        showMain(name, center);
+        showMain(getCurrentName(), getCurrentCenter());
     }
 
     function changeUser() {
@@ -425,17 +434,24 @@
     function backToCenters() {
         localStorage.removeItem("employee_center");
         resetDraft();
-        const name = localStorage.getItem("employee_name");
-        showCenters(name);
+        showCenters(getCurrentName());
+    }
+
+    function getCurrentName() {
+        return localStorage.getItem("employee_name") || "";
+    }
+
+    function getCurrentCenter() {
+        return localStorage.getItem("employee_center") || "";
     }
 
     function resetDraft() {
-        state.downtimeType = null;
-        state.reason = null;
-        state.customTitle = null;
-        state.customPrompt = null;
-        state.customDetail = "";
-        state.minutes = null;
+        state.mode = null;
+        state.reason = "";
+        state.minutes = "";
+        state.customTitle = "";
+        state.customPrompt = "";
+        state.badNormText = "";
         isSubmitting = false;
 
         const submitBtn = document.getElementById("submitBtn");
@@ -451,43 +467,34 @@
         }
     }
 
-    function getCurrentCenter() {
-        return localStorage.getItem("employee_center");
-    }
-
-    function getCurrentName() {
-        return localStorage.getItem("employee_name");
-    }
-
     function getStandardReasons(center) {
-        return CONFIG.standard_reasons_by_center[center] || CONFIG.standard_reasons_default;
+        return CONFIG.standardReasonsByCenter[center] || CONFIG.standardReasonsDefault;
     }
 
     function getCustomReasons(center) {
-        return CONFIG.custom_reasons_by_center[center] || [
-            {"title": "Другое", "prompt": "Описать причину"}
+        return CONFIG.customReasonsByCenter[center] || [
+            { title: "Другое", prompt: "Описать причину" }
         ];
     }
 
     function getQuickMinutes(center) {
-        return CONFIG.quick_minutes_by_center[center] || CONFIG.quick_minutes_default;
+        return CONFIG.quickMinutesByCenter[center] || CONFIG.quickMinutesDefault;
     }
 
     function openStandardReasons() {
         hideAll();
         resetDraft();
 
-        const center = getCurrentCenter();
-        state.downtimeType = "standard";
+        state.mode = "standard";
 
+        const center = getCurrentCenter();
         document.getElementById("screen-standard-reasons").style.display = "block";
         document.getElementById("standardHeader").innerText = getCurrentName() + " | " + center;
 
         const list = document.getElementById("standardReasonsList");
         list.innerHTML = "";
 
-        const reasons = getStandardReasons(center);
-        reasons.forEach(reason => {
+        getStandardReasons(center).forEach(reason => {
             const btn = document.createElement("button");
             btn.innerText = reason;
             btn.onclick = () => {
@@ -502,17 +509,16 @@
         hideAll();
         resetDraft();
 
-        const center = getCurrentCenter();
-        state.downtimeType = "custom";
+        state.mode = "custom";
 
+        const center = getCurrentCenter();
         document.getElementById("screen-custom-reasons").style.display = "block";
         document.getElementById("customHeader").innerText = getCurrentName() + " | " + center;
 
         const list = document.getElementById("customReasonsList");
         list.innerHTML = "";
 
-        const reasons = getCustomReasons(center);
-        reasons.forEach(item => {
+        getCustomReasons(center).forEach(item => {
             const btn = document.createElement("button");
             btn.innerText = item.title;
             btn.onclick = () => handleCustomReason(item);
@@ -524,7 +530,7 @@
         state.customTitle = item.title;
         state.customPrompt = item.prompt || "";
 
-        if (state.customPrompt.trim() === "") {
+        if (!state.customPrompt.trim()) {
             state.reason = item.title;
             openMinutes();
             return;
@@ -534,20 +540,46 @@
         document.getElementById("screen-custom-detail").style.display = "block";
         document.getElementById("customDetailHeader").innerText = getCurrentName() + " | " + getCurrentCenter();
         document.getElementById("customPromptText").innerText = item.title + ": " + item.prompt;
-        document.getElementById("customDetailInput").value = "";
-        document.getElementById("customDetailInput").placeholder = item.prompt;
+
+        const input = document.getElementById("customDetailInput");
+        input.value = "";
+        input.placeholder = item.prompt;
     }
 
     function saveCustomDetail() {
         const detail = document.getElementById("customDetailInput").value.trim();
+
         if (!detail) {
             alert("Заполните поле");
             return;
         }
 
-        state.customDetail = detail;
         state.reason = state.customTitle + " — " + detail;
         openMinutes();
+    }
+
+    function openBadNorm() {
+        hideAll();
+        resetDraft();
+
+        state.mode = "badnorm";
+
+        document.getElementById("screen-badnorm").style.display = "block";
+        document.getElementById("badNormHeader").innerText = getCurrentName() + " | " + getCurrentCenter();
+        document.getElementById("badNormInput").value = "";
+    }
+
+    function openBadNormConfirm() {
+        const text = document.getElementById("badNormInput").value.trim();
+
+        if (!text) {
+            alert("Введите позицию или описание");
+            return;
+        }
+
+        state.badNormText = text;
+        state.reason = text;
+        openConfirm();
     }
 
     function openMinutes() {
@@ -561,8 +593,7 @@
         const list = document.getElementById("quickMinutesList");
         list.innerHTML = "";
 
-        const quickMinutes = getQuickMinutes(center);
-        quickMinutes.forEach(min => {
+        getQuickMinutes(center).forEach(min => {
             const btn = document.createElement("button");
             btn.innerText = min + " мин";
             btn.onclick = () => {
@@ -589,39 +620,59 @@
     }
 
     function backFromMinutes() {
-        if (state.downtimeType === "standard") {
+        if (state.mode === "standard") {
             openStandardReasons();
-        } else {
-            openCustomReasons();
+            return;
         }
+
+        openCustomReasons();
+    }
+
+    function backFromConfirm() {
+        if (state.mode === "badnorm") {
+            hideAll();
+            document.getElementById("screen-badnorm").style.display = "block";
+            document.getElementById("badNormHeader").innerText = getCurrentName() + " | " + getCurrentCenter();
+            document.getElementById("badNormInput").value = state.badNormText;
+            return;
+        }
+
+        openMinutes();
     }
 
     function openConfirm() {
         hideAll();
         document.getElementById("screen-confirm").style.display = "block";
 
-        const summary =
-            "<b>ФИО:</b> " + escapeHtml(getCurrentName()) + "<br>" +
-            "<b>РЦ:</b> " + escapeHtml(getCurrentCenter()) + "<br>" +
-            "<b>Тип:</b> " + escapeHtml(state.downtimeType === "standard" ? "Стандартный" : "Нестандартный") + "<br>" +
-            "<b>Причина:</b> " + escapeHtml(state.reason) + "<br>" +
-            "<b>Минуты:</b> " + escapeHtml(String(state.minutes));
+        let html = "";
 
-        document.getElementById("confirmSummary").innerHTML = summary;
+        if (state.mode === "badnorm") {
+            html =
+                "<b>Идентификатор:</b> " + escapeHtml(getCurrentName()) + "<br>" +
+                "<b>РЦ:</b> " + escapeHtml(getCurrentCenter()) + "<br>" +
+                "<b>Тип:</b> Некорректная норма<br>" +
+                "<b>Позиция / описание:</b> " + escapeHtml(state.reason);
+        } else {
+            html =
+                "<b>Идентификатор:</b> " + escapeHtml(getCurrentName()) + "<br>" +
+                "<b>РЦ:</b> " + escapeHtml(getCurrentCenter()) + "<br>" +
+                "<b>Тип:</b> " + escapeHtml(state.mode === "standard" ? "Стандартный" : "Нестандартный") + "<br>" +
+                "<b>Причина:</b> " + escapeHtml(state.reason) + "<br>" +
+                "<b>Минуты:</b> " + escapeHtml(String(state.minutes));
+        }
+
+        document.getElementById("confirmSummary").innerHTML = html;
         document.getElementById("submitBtn").disabled = false;
         document.getElementById("submitBtn").innerText = "✅ Подтвердить и отправить";
         document.getElementById("sendingNote").style.display = "none";
         isSubmitting = false;
     }
 
-    function backToMinutes() {
-        openMinutes();
-    }
+    async function submitRecord() {
+        if (isSubmitting) return;
 
-    async function submitDowntime() {
-        if (isSubmitting) {
-            return;
-        }
+        const payload = buildPayload_();
+        if (!payload) return;
 
         isSubmitting = true;
 
@@ -631,16 +682,6 @@
         submitBtn.disabled = true;
         submitBtn.innerText = "Отправка...";
         sendingNote.style.display = "block";
-
-        const payload = {
-            telegram_id: "",
-            name: getCurrentName(),
-            center: getCurrentCenter(),
-            downtime_type: state.downtimeType,
-            reason: state.reason,
-            minutes: state.minutes,
-            comment: "source:web"
-        };
 
         try {
             await fetch(WEBHOOK_URL, {
@@ -652,42 +693,87 @@
                 body: JSON.stringify(payload)
             });
 
-const lastRecord = {
-    center: getCurrentCenter(),
-    reason: state.reason,
-    minutes: state.minutes,
-    downtimeType: state.downtimeType
-};
-
-localStorage.setItem("last_record", JSON.stringify(lastRecord));
-
-hideAll();
-document.getElementById("screen-success").style.display = "block";
-document.getElementById("successText").innerText = "Запись отправлена.";
-
-const lastRecordBox = document.getElementById("lastRecordBox");
-lastRecordBox.style.display = "block";
-lastRecordBox.innerHTML =
-    "<b>Последняя запись:</b><br>" +
-    escapeHtml(lastRecord.center) + "<br>" +
-    escapeHtml(lastRecord.reason) + "<br>" +
-    escapeHtml(String(lastRecord.minutes)) + " мин";
-
-resetDraft();
-
-            setTimeout(() => {
-                isSubmitting = false;
-            }, 5000);
+            showSuccess(payload);
+            resetDraft();
 
         } catch (err) {
+            isSubmitting = false;
+            submitBtn.disabled = false;
+            submitBtn.innerText = "✅ Подтвердить и отправить";
+            sendingNote.style.display = "none";
             alert("Не удалось отправить запись. Проверь интернет и попробуй ещё раз.");
+        }
+    }
 
-            setTimeout(() => {
-                isSubmitting = false;
-                submitBtn.disabled = false;
-                submitBtn.innerText = "✅ Подтвердить и отправить";
-                sendingNote.style.display = "none";
-            }, 5000);
+    function buildPayload_() {
+        const name = getCurrentName();
+        const center = getCurrentCenter();
+
+        if (!name) {
+            alert("Не найден идентификатор");
+            return null;
+        }
+
+        if (!center) {
+            alert("Не найден РЦ");
+            return null;
+        }
+
+        if (state.mode === "badnorm") {
+            if (!state.reason.trim()) {
+                alert("Введите позицию или описание");
+                return null;
+            }
+
+            return {
+                name: name,
+                center: center,
+                downtime_type: "badnorm",
+                reason: state.reason.trim(),
+                comment: ""
+            };
+        }
+
+        if (!state.reason.trim()) {
+            alert("Не выбрана причина");
+            return null;
+        }
+
+        if (String(state.minutes).trim() === "") {
+            alert("Не указаны минуты");
+            return null;
+        }
+
+        return {
+            name: name,
+            center: center,
+            downtime_type: state.mode,
+            reason: state.reason.trim(),
+            minutes: state.minutes,
+            comment: ""
+        };
+    }
+
+    function showSuccess(payload) {
+        hideAll();
+        document.getElementById("screen-success").style.display = "block";
+        document.getElementById("successText").innerText = "Запись отправлена.";
+
+        const box = document.getElementById("lastRecordBox");
+        box.style.display = "block";
+
+        if (payload.downtime_type === "badnorm") {
+            box.innerHTML =
+                "<b>Последняя запись:</b><br>" +
+                escapeHtml(payload.center) + "<br>" +
+                "Некорректная норма<br>" +
+                escapeHtml(payload.reason);
+        } else {
+            box.innerHTML =
+                "<b>Последняя запись:</b><br>" +
+                escapeHtml(payload.center) + "<br>" +
+                escapeHtml(payload.reason) + "<br>" +
+                escapeHtml(String(payload.minutes)) + " мин";
         }
     }
 
@@ -698,13 +784,14 @@ resetDraft();
         document.getElementById("screen-standard-reasons").style.display = "none";
         document.getElementById("screen-custom-reasons").style.display = "none";
         document.getElementById("screen-custom-detail").style.display = "none";
+        document.getElementById("screen-badnorm").style.display = "none";
         document.getElementById("screen-minutes").style.display = "none";
         document.getElementById("screen-confirm").style.display = "none";
         document.getElementById("screen-success").style.display = "none";
     }
 
     function escapeHtml(text) {
-        return text
+        return String(text)
             .replaceAll("&", "&amp;")
             .replaceAll("<", "&lt;")
             .replaceAll(">", "&gt;")
