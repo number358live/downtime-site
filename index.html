@@ -205,12 +205,13 @@
 </div>
 
 <div class="card" id="screen-minutes" style="display:none;">
-    <h2>Минуты</h2>
+    <h2>Минуты / часы</h2>
     <p id="minutesHeader"></p>
     <div id="quickMinutesList"></div>
 
-    <p class="muted">Или введите вручную:</p>
-    <input id="manualMinutesInput" placeholder="Например 12" inputmode="numeric">
+    <p class="muted">Или введите вручную — заполните только одно поле:</p>
+    <input id="manualMinutesInput" placeholder="Минуты, например 12" inputmode="numeric">
+    <input id="manualHoursInput" placeholder="Часы, например 1.5" inputmode="decimal">
     <button onclick="saveManualMinutes()">Продолжить</button>
     <button class="secondary" onclick="backFromMinutes()">⬅️ Назад</button>
 </div>
@@ -766,15 +767,46 @@
         });
 
         document.getElementById("manualMinutesInput").value = "";
+        document.getElementById("manualHoursInput").value = "";
     }
 
     function saveManualMinutes() {
-        const value = document.getElementById("manualMinutesInput").value.trim();
-        const minutes = Number(value);
+        const minutesValue = document.getElementById("manualMinutesInput").value.trim();
+        const hoursValue = document.getElementById("manualHoursInput").value.trim().replace(",", ".");
 
-        if (!value || !Number.isInteger(minutes) || minutes <= 0 || minutes > 1440) {
-            alert("Введите минуты числом, например 12");
+        if (!minutesValue && !hoursValue) {
+            alert("Введите минуты или часы");
             return;
+        }
+
+        if (minutesValue && hoursValue) {
+            alert("Заполните только одно поле: минуты или часы");
+            return;
+        }
+
+        let minutes;
+
+        if (minutesValue) {
+            minutes = Number(minutesValue);
+
+            if (!Number.isInteger(minutes) || minutes <= 0 || minutes > 1440) {
+                alert("Введите минуты целым числом от 1 до 1440, например 12");
+                return;
+            }
+        } else {
+            const hours = Number(hoursValue);
+
+            if (!Number.isFinite(hours) || hours <= 0 || hours > 24) {
+                alert("Введите часы числом от 0.1 до 24, например 1.5");
+                return;
+            }
+
+            minutes = Math.round(hours * 60);
+
+            if (!Number.isInteger(minutes) || minutes <= 0 || minutes > 1440) {
+                alert("Часы должны переводиться в минуты от 1 до 1440");
+                return;
+            }
         }
 
         state.minutes = minutes;
@@ -892,7 +924,8 @@
                 center: center,
                 downtime_type: "badnorm",
                 reason: state.reason.trim(),
-                comment: ""
+                comment: "",
+                client_info: getClientInfo_()
             };
         }
 
@@ -912,7 +945,8 @@
             downtime_type: state.mode,
             reason: state.reason.trim(),
             minutes: state.minutes,
-            comment: ""
+            comment: "",
+            client_info: getClientInfo_()
         };
     }
 
@@ -950,6 +984,96 @@
         document.getElementById("screen-minutes").style.display = "none";
         document.getElementById("screen-confirm").style.display = "none";
         document.getElementById("screen-success").style.display = "none";
+    }
+
+    function getClientInfo_() {
+        const ua = navigator.userAgent || "";
+
+        return {
+            device: detectDeviceByUa_(ua),
+            os: detectOsByUa_(ua),
+            browser: detectBrowserByUa_(ua),
+            model: detectModelByUa_(ua)
+        };
+    }
+
+    function detectDeviceByUa_(ua) {
+        const text = String(ua || "").toLowerCase();
+
+        if (text.includes("ipad") || text.includes("tablet")) {
+            return "Планшет";
+        }
+
+        if (text.includes("mobile") || text.includes("android") || text.includes("iphone")) {
+            return "Телефон";
+        }
+
+        return "ПК";
+    }
+
+    function detectOsByUa_(ua) {
+        const text = String(ua || "").toLowerCase();
+
+        if (text.includes("android")) return "Android";
+        if (text.includes("iphone") || text.includes("ipad")) return "iOS";
+        if (text.includes("windows")) return "Windows";
+        if (text.includes("mac os") || text.includes("macintosh")) return "macOS";
+        if (text.includes("linux")) return "Linux";
+
+        return "Неизвестно";
+    }
+
+    function detectBrowserByUa_(ua) {
+        const text = String(ua || "").toLowerCase();
+
+        if (text.includes("edg/")) return "Edge";
+        if (text.includes("opr/") || text.includes("opera")) return "Opera";
+        if (text.includes("firefox/")) return "Firefox";
+        if (text.includes("samsungbrowser/")) return "Samsung Internet";
+        if (text.includes("chrome/") || text.includes("crios/")) return "Chrome";
+        if (text.includes("safari/")) return "Safari";
+
+        return "Неизвестно";
+    }
+
+    function detectModelByUa_(ua) {
+        const text = String(ua || "");
+        const bracket = text.match(/\((.*?)\)/);
+
+        if (!bracket || !bracket[1]) {
+            return "";
+        }
+
+        const parts = bracket[1]
+            .split(";")
+            .map(part => part.trim())
+            .filter(Boolean);
+
+        for (const part of parts) {
+            const lower = part.toLowerCase();
+
+            if (lower === "linux" || lower === "android" || lower.startsWith("android ")) {
+                continue;
+            }
+
+            if (lower.includes("iphone")) return "iPhone";
+            if (lower.includes("ipad")) return "iPad";
+
+            if (
+                /\bsm-[a-z0-9]+\b/i.test(part) ||
+                /\bredmi\b/i.test(part) ||
+                /\bmi\s+[a-z0-9]+/i.test(part) ||
+                /\bpoco\b/i.test(part) ||
+                /\bhuawei\b/i.test(part) ||
+                /\bhonor\b/i.test(part) ||
+                /\boneplus\b/i.test(part) ||
+                /\bpixel\b/i.test(part)
+            ) {
+                return part;
+            }
+        }
+
+        return "";
     }
 
     function escapeHtml(text) {
