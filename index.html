@@ -100,6 +100,34 @@
             margin-top: 10px;
         }
 
+        .latest-box {
+            background: #f7f7f7;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+
+        .latest-title {
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .latest-item {
+            padding: 8px 0;
+            border-top: 1px solid #ddd;
+            font-size: 14px;
+            line-height: 1.35;
+        }
+
+        .latest-item:first-of-type {
+            border-top: none;
+        }
+
+        .latest-empty {
+            color: #666;
+            font-size: 14px;
+        }
+
         .sending-note {
             margin-top: 12px;
             padding: 12px;
@@ -131,7 +159,12 @@
     <h2>Меню</h2>
     <p id="mainHeader"></p>
 
-    <button class="danger" onclick="openStandardReasons()">🛑 Стандартный простой</button>
+    
+    <div class="latest-box">
+        <div class="latest-title">Последние 5 простоев по РЦ</div>
+        <div id="latestDowntimesList" class="latest-empty">Загрузка...</div>
+    </div>
+<button class="danger" onclick="openStandardReasons()">🛑 Стандартный простой</button>
     <button onclick="openCustomReasons()">✍️ Нестандартный простой</button>
     <button class="secondary" onclick="openBadNorm()">📉 Некорректная норма</button>
 
@@ -207,6 +240,9 @@
         centers: [
             "РЦ 3411 Окраска",
             "РЦ 3415 Стяжки",
+            "РЦ 34251",
+            "РЦ 345252",
+            "РЦ 24253",
             "РЦ 3413 Стам",
             "РЦ 3424 Полки",
             "РЦ 3412 Макринг",
@@ -235,6 +271,9 @@
             "РЦ 3412 Макринг": ["Переход по толщине", "Переход по ширине", "ППР"],
             "РЦ 3413 Стам": ["Переход по толщине", "Переход по ширине", "Без погрузчика", "ППР"],
             "РЦ 3415 Стяжки": ["Переход по ширине", "ППР"],
+            "РЦ 34251": ["Переход по ширине", "ППР"],
+            "РЦ 345252": ["Переход по ширине", "ППР"],
+            "РЦ 24253": ["Переход по ширине", "ППР"],
             "РЦ 3416 А90": ["Переход по ширине", "ППР"],
             "РЦ 3417 Т35/Т50": ["ППР"],
             "РЦ 3418 Р90+": ["Переход по толщине", "Переход по ширине", "ППР"],
@@ -285,6 +324,27 @@
                 { title: "Ремонт", prompt: "Описать причину" },
                 { title: "Другое", prompt: "Описать причину" }
             ],
+"РЦ 34251": [
+    { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+    { title: "Маленькие рулоны", prompt: "" },
+    { title: "Маленькие пачки", prompt: "" },
+    { title: "Ремонт", prompt: "Описать причину" },
+    { title: "Другое", prompt: "Описать причину" }
+],
+"РЦ 345252": [
+    { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+    { title: "Маленькие рулоны", prompt: "" },
+    { title: "Маленькие пачки", prompt: "" },
+    { title: "Ремонт", prompt: "Описать причину" },
+    { title: "Другое", prompt: "Описать причину" }
+],
+"РЦ 24253": [
+    { title: "Перевод на другой РЦ", prompt: "Написать линию" },
+    { title: "Маленькие рулоны", prompt: "" },
+    { title: "Маленькие пачки", prompt: "" },
+    { title: "Ремонт", prompt: "Описать причину" },
+    { title: "Другое", prompt: "Описать причину" }
+],
             "РЦ 3416 А90": [
                 { title: "Настройка", prompt: "Написать линию" },
                 { title: "Перевод на другой РЦ", prompt: "Описать причину" },
@@ -417,7 +477,8 @@
         hideAll();
         document.getElementById("screen-main").style.display = "block";
         document.getElementById("mainHeader").innerText = name + " | " + center;
-    }
+            loadLatestDowntimes(center);
+}
 
     function showMainFromStorage() {
         resetDraft();
@@ -479,6 +540,107 @@
 
     function getQuickMinutes(center) {
         return CONFIG.quickMinutesByCenter[center] || CONFIG.quickMinutesDefault;
+    }
+
+    async function loadLatestDowntimes(center) {
+        const list = document.getElementById("latestDowntimesList");
+
+        if (!list) return;
+
+        list.className = "latest-empty";
+        list.innerText = "Загрузка...";
+
+        try {
+            const url = WEBHOOK_URL +
+                "?action=latest" +
+                "&center=" + encodeURIComponent(center) +
+                "&limit=5" +
+                "&t=" + Date.now();
+
+            const response = await fetch(url, {
+                method: "GET",
+                cache: "no-store"
+            });
+
+            const data = await response.json();
+
+            if (!data || !data.ok) {
+                throw new Error(data && data.error ? data.error : "Ошибка загрузки");
+            }
+
+            renderLatestDowntimes(data.records || []);
+
+        } catch (err) {
+            list.className = "latest-empty";
+            list.innerText = "Не удалось загрузить последние простои";
+        }
+    }
+
+    function renderLatestDowntimes(records) {
+        const list = document.getElementById("latestDowntimesList");
+
+        if (!list) return;
+
+        list.innerHTML = "";
+
+        if (!records.length) {
+            list.className = "latest-empty";
+            list.innerText = "Пока нет записей по этому РЦ";
+            return;
+        }
+
+        list.className = "";
+
+        records.forEach(record => {
+            const item = document.createElement("div");
+            item.className = "latest-item";
+
+            const dateText = cleanDateText_(record.date);
+            const timeText = cleanTimeText_(record.time);
+
+            item.innerHTML =
+                "<b>" + escapeHtml(dateText) + (timeText ? " " + escapeHtml(timeText) : "") + "</b><br>" +
+                escapeHtml(record.type) + " — " + escapeHtml(record.reason) + "<br>" +
+                "<span class=\"muted\">" +
+                escapeHtml(record.name) + " | " + escapeHtml(String(record.minutes)) + " мин" +
+                "</span>";
+
+            list.appendChild(item);
+        });
+    }
+
+    function cleanDateText_(value) {
+        const text = String(value || "").trim();
+
+        if (!text) return "";
+
+        const ready = text.match(/\b\d{2}\.\d{2}\.\d{4}\b/);
+        if (ready) return ready[0];
+
+        const sheetDate = text.match(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})\s+(\d{4})/i);
+        if (sheetDate) {
+            const months = {
+                Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06",
+                Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12"
+            };
+            const day = String(sheetDate[3]).padStart(2, "0");
+            const month = months[sheetDate[2].slice(0, 3)] || sheetDate[2];
+            const year = sheetDate[4];
+            return day + "." + month + "." + year;
+        }
+
+        return text;
+    }
+
+    function cleanTimeText_(value) {
+        const text = String(value || "").trim();
+
+        if (!text) return "";
+
+        const ready = text.match(/\b\d{1,2}:\d{2}(?::\d{2})?\b/);
+        if (ready) return ready[0];
+
+        return text;
     }
 
     function openStandardReasons() {
