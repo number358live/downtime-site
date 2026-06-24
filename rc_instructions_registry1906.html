@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Реестр инструкций РЦ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 15px;
+        }
+        .card {
+            max-width: 430px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 0 12px rgba(0, 0, 0, .08);
+        }
+        h2 {
+            margin-top: 0;
+            text-align: center;
+            font-size: 20px;
+        }
+        .muted {
+            color: #666;
+            font-size: 14px;
+        }
+        input {
+            width: 100%;
+            padding: 14px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+        input:focus {
+            outline: 0;
+            border-color: #2d89ef;
+        }
+        button,
+        .instruction-link {
+            width: 100%;
+            padding: 16px;
+            margin-top: 10px;
+            font-size: 16px;
+            border: 0;
+            border-radius: 10px;
+            background: #2d89ef;
+            color: #fff;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: background .2s;
+        }
+        button:hover,
+        .instruction-link:hover {
+            opacity: .9;
+        }
+        button:active,
+        .instruction-link:active {
+            background: #1b5fa7;
+        }
+        .secondary {
+            background: #777;
+        }
+        .secondary:active {
+            background: #555;
+        }
+        .success {
+            background: #2e8b57;
+        }
+        .success:active {
+            background: #256f46;
+        }
+        .warning {
+            background: #f0ad4e;
+        }
+        .warning:active {
+            background: #d48a2e;
+        }
+        .hidden {
+            display: none;
+        }
+        .latest-box {
+            background: #f7f7f7;
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+        .latest-title {
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        .latest-empty {
+            color: #666;
+            font-size: 14px;
+            padding: 10px 0;
+        }
+        .accordion-item {
+            border-radius: 10px;
+            margin-top: 8px;
+            overflow: hidden;
+            border: 1px solid #e0e0e0;
+        }
+        .accordion-header {
+            background: #f0f4f8;
+            padding: 12px 16px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            user-select: none;
+            transition: background .2s;
+        }
+        .accordion-header:hover {
+            background: #e3eaf0;
+        }
+        .accordion-header .arrow {
+            transition: transform .3s;
+            font-size: 12px;
+            color: #888;
+        }
+        .accordion-header .arrow.open {
+            transform: rotate(180deg);
+        }
+        .accordion-header .badge {
+            background: #2d89ef;
+            color: #fff;
+            border-radius: 12px;
+            padding: 2px 10px;
+            font-size: 12px;
+        }
+        .accordion-header.global-header {
+            background: #f0f0f0;
+            border-left: 3px solid #ccc;
+        }
+        .accordion-header.global-header:hover {
+            background: #e5e5e5;
+        }
+        .accordion-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height .3s ease;
+            background: #fff;
+        }
+        .accordion-body.open {
+            max-height: 5000px;
+        }
+        .accordion-body-inner {
+            padding: 12px 16px;
+        }
+        .instruction-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+            border-left: 4px solid #2d89ef;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .instruction-card:first-child {
+            margin-top: 0;
+        }
+        .instruction-card.global {
+            border-left-color: #aaa;
+            background: #fafafa;
+        }
+        .instruction-title {
+            font-weight: 700;
+            font-size: 14px;
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        .instruction-note {
+            color: #666;
+            font-size: 13px;
+            line-height: 1.35;
+            margin-top: 2px;
+            margin-bottom: 0;
+            word-break: break-word;
+        }
+        .global-badge,
+        .new-badge {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .global-badge {
+            display: inline-block;
+            background: #999;
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+            margin-left: 4px;
+        }
+        .instruction-link {
+            padding: 10px;
+            font-size: 14px;
+            margin-top: 6px;
+        }
+        .loading {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2d89ef;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        .last-updated {
+            text-align: right;
+            font-size: 11px;
+            color: #999;
+            margin-top: 10px;
+        }
+        .error-box {
+            background: #fff3f3;
+            border: 1px solid #ffcdd2;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 10px 0;
+            color: #c62828;
+        }
+        .debug-info {
+            display: none !important;
+        }
+        .search-hint {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+            text-align: center;
+        }
+        .back-button {
+            background: 0 0;
+            border: 0;
+            color: #2d89ef;
+            font-size: 14px;
+            padding: 8px 0;
+            cursor: pointer;
+            text-align: left;
+            font-weight: 700;
+        }
+        .back-button:hover {
+            text-decoration: underline;
+        }
+        .count-badge {
+            background: #e8f0fe;
+            color: #1a73e8;
+            border-radius: 12px;
+            padding: 2px 10px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+        .center-instructions-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: #1a73e8;
+            margin-top: 15px;
+            padding: 5px 0;
+        }
+        .expand-all-btn {
+            background: 0 0;
+            border: 1px solid #ccc;
+            color: #555;
+            padding: 6px 14px;
+            font-size: 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-top: 8px;
+            display: inline-block;
+            width: auto;
+        }
+        .expand-all-btn:hover {
+            background: #f0f0f0;
+        }
+        .header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .highlight {
+            background: #ffeb3b;
+            padding: 0 2px;
+            border-radius: 2px;
+            font-weight: 700;
+        }
+        .new-badge {
+            display: inline-block;
+            background: #ff4444;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-left: 6px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: .5;
+            }
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            opacity: 0;
+            transition: opacity .3s;
+            pointer-events: none;
+            z-index: 1000;
+        }
+        .toast.show {
+            opacity: 1;
+        }
+        .instruction-meta {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+            word-break: break-word;
+        }
+        /* --- ДОПОЛНИТЕЛЬНЫЕ УЛУЧШЕНИЯ --- */
+        .instruction-card .instruction-link {
+            margin-top: 4px;
+        }
+        .instruction-card .new-badge {
+            margin-left: 6px;
+        }
+        .instruction-card .global-badge {
+            margin-left: 4px;
+        }
+        .accordion-header .badge {
+            background: #2d89ef;
+            color: #fff;
+            border-radius: 12px;
+            padding: 2px 10px;
+            font-size: 12px;
+        }
+        .toast {
+            max-width: 90%;
+        }
+        .instruction-title .highlight {
+            background: #ffeb3b;
+            padding: 0 2px;
+            border-radius: 2px;
+            font-weight: 700;
+        }
+        .instruction-title .new-badge,
+        .instruction-title .global-badge {
+            display: inline-block;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast" class="toast"></div>
+
+    <!-- ===== ЭКРАН СПИСКА РЦ ===== -->
+    <div class="card" id="screen-centers">
+        <h2>📋 Инструкции РЦ</h2>
+        <p class="muted">Выберите РЦ из списка или найдите по номеру / названию.</p>
+        <input id="searchInput" placeholder="🔍 Поиск: 3411, окраска, сварка..." autocomplete="off">
+        <div id="centersList"></div>
+        <div class="last-updated" id="updateInfo">⏳ Загрузка данных...</div>
+    </div>
+
+    <!-- ===== ЭКРАН ИНСТРУКЦИЙ РЦ ===== -->
+    <div class="card hidden" id="screen-instructions">
+        <button class="back-button" onclick="showCentersScreen()">← Назад к списку РЦ</button>
+        <div class="header-row">
+            <h2 id="centerHeader" style="margin-top:5px;font-size:18px;"></h2>
+            <button class="expand-all-btn" onclick="toggleAllAccordion()" id="expandAllBtn">📂 Развернуть всё</button>
+        </div>
+        <input id="searchInsideInput" placeholder="🔍 Поиск инструкций..." autocomplete="off">
+        <div class="search-hint">Поиск по названию или примечанию</div>
+        <div class="latest-box" style="margin-top:10px;">
+            <div class="latest-title">📄 Реестр инструкций <span id="instructionsCount" class="count-badge">0</span></div>
+            <div id="instructionsList" class="latest-empty"></div>
+        </div>
+        <button class="secondary" onclick="showCentersScreen()">🔁 Выбрать другой РЦ</button>
+    </div>
+
+    <script>
+        (function() {
+            // =========================================================
+            // НАСТРОЙКА
+            // =========================================================
+            const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwoNJBz7K8FS3J9UJU3a83R9YGVpivvGuJnK-Wk_IeadP-Qkevm8WRfhEp0fdwau0dupA/exec';
+
+            let allCenters = [];
+            let globalInstructions = [];
+            let currentCenterId = null;
+            let allAccordionItems = [];
+            let currentQuery = '';
+
+            // =========================================================
+            // TOAST
+            // =========================================================
+            function showToast(msg, dur) {
+                dur = dur || 2000;
+                var t = document.getElementById('toast');
+                t.textContent = msg;
+                t.classList.add('show');
+                clearTimeout(t._timer);
+                t._timer = setTimeout(function() { t.classList.remove('show'); }, dur);
+            }
+
+            // =========================================================
+            // СЧЁТЧИК ПРОСМОТРОВ
+            // =========================================================
+            var pendingViews = [];
+            var syncTimer = null;
+
+            function queueView(rcId, title) {
+                pendingViews.push({ rc_id: rcId, title: title });
+                if (!syncTimer) {
+                    syncTimer = setTimeout(sendPendingViews, 30000);
+                }
+            }
+
+            function sendPendingViews() {
+                if (pendingViews.length === 0) {
+                    syncTimer = null;
+                    return;
+                }
+                var batch = pendingViews.slice();
+                pendingViews = [];
+                syncTimer = null;
+
+                var payload = JSON.stringify(batch);
+                fetch(SCRIPT_URL + '?action=syncViewsBatch', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: payload
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            console.log('✅ Статистика отправлена:', data.updated);
+                        } else {
+                            console.warn('⚠️ Ошибка синхронизации:', data.error);
+                            pendingViews = batch.concat(pendingViews);
+                        }
+                    })
+                    .catch(function(e) {
+                        console.warn('⚠️ Не удалось отправить статистику:', e);
+                        pendingViews = batch.concat(pendingViews);
+                    });
+            }
+
+            window.addEventListener('beforeunload', function() {
+                if (pendingViews.length > 0) {
+                    var payload = JSON.stringify(pendingViews);
+                    navigator.sendBeacon(SCRIPT_URL + '?action=syncViewsBatch', payload);
+                    pendingViews = [];
+                }
+            });
+
+            // =========================================================
+            // ПРОВЕРКА "НОВОЕ"
+            // =========================================================
+            function isNew(dateAdded) {
+                if (!dateAdded) return false;
+                var added = new Date(dateAdded);
+                var now = new Date();
+                var diff = (now - added) / (1000 * 60 * 60 * 24);
+                return diff <= 7;
+            }
+
+            // =========================================================
+            // ПОДСВЕТКА
+            // =========================================================
+            function highlightText(text, query) {
+                if (!query || !text) return text;
+                var escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                var regex = new RegExp(escaped, 'gi');
+                return text.replace(regex, function(match) {
+                    return '<span class="highlight">' + match + '</span>';
+                });
+            }
+
+            // =========================================================
+            // ЗАГРУЗКА ДАННЫХ
+            // =========================================================
+            function loadDataFromSheet() {
+                var list = document.getElementById('centersList');
+                list.innerHTML =
+                    '<div class="loading"><div class="loading-spinner"></div><div style="margin-top:10px;">Загрузка данных...</div></div>';
+                document.getElementById('updateInfo').textContent = '⏳ Загрузка...';
+
+                fetch(SCRIPT_URL + '?action=getData&sheet=Sheet1')
+                    .then(function(res) { if (!res.ok) throw new Error('Сеть: ' + res.status); return res.json(); })
+                    .then(function(data) {
+                        if (data.error) throw new Error(data.error);
+                        processData(data);
+                        document.getElementById('updateInfo').textContent = '✅ Обновлено: ' + new Date().toLocaleString() +
+                            ' (' + allCenters.length + ' РЦ)';
+                        afterLoad();
+                    })
+                    .catch(function(err) {
+                        console.error(err);
+                        list.innerHTML =
+                            '<div class="error-box">❌ Ошибка загрузки<br><span style="font-size:12px;">' + err
+                            .message + '</span><br><br><button onclick="loadDataFromSheet()" style="width:auto;padding:10px 20px;display:inline-block;background:#2d89ef;">🔄 Повторить</button></div>';
+                        document.getElementById('updateInfo').textContent = '❌ Ошибка загрузки';
+                    });
+            }
+
+            function afterLoad() {
+                var rcId = getRcIdFromUrl();
+                if (rcId && findCenter(rcId)) {
+                    showInstructions(rcId, false);
+                } else {
+                    renderCenters('');
+                }
+            }
+
+            // =========================================================
+            // ОБРАБОТКА ДАННЫХ
+            // =========================================================
+            function processData(data) {
+                if (!data || !data.rows) { allCenters = [];
+                    globalInstructions = []; return; }
+                var map = {};
+                var globalList = [];
+
+                data.rows.forEach(function(row) {
+                    var rcId, center, title, url, note, category, isGlobal, active, views, dateAdded;
+                    if (typeof row === 'object' && !Array.isArray(row)) {
+                        rcId = String(row.rc_id || '').trim();
+                        center = String(row.center || '').trim();
+                        title = String(row.title || 'Инструкция').trim();
+                        url = String(row.url || '#').trim();
+                        note = String(row.instruction_note || '').trim();
+                        category = String(row.category || 'Без категории').trim();
+                        isGlobal = String(row.is_global || 'FALSE').trim().toUpperCase();
+                        active = String(row.active || 'TRUE').trim().toUpperCase();
+                        views = row.views || 0;
+                        dateAdded = row.date_added || '';
+                    } else {
+                        rcId = String(row[0] || '').trim();
+                        center = String(row[1] || '').trim();
+                        title = String(row[2] || 'Инструкция').trim();
+                        url = String(row[3] || '#').trim();
+                        note = String(row[4] || '').trim();
+                        category = String(row[5] || 'Без категории').trim();
+                        isGlobal = String(row[6] || 'FALSE').trim().toUpperCase();
+                        active = String(row[7] || 'TRUE').trim().toUpperCase();
+                        views = row[8] || 0;
+                        dateAdded = row[9] || '';
+                    }
+                    if (!rcId || !center) return;
+                    if (active === 'FALSE') return;
+
+                    var instr = {
+                        title: title || 'Инструкция',
+                        url: url || '#',
+                        note: note || '',
+                        category: category || 'Без категории',
+                        isGlobal: isGlobal === 'TRUE',
+                        views: parseInt(views) || 0,
+                        dateAdded: dateAdded || ''
+                    };
+
+                    if (instr.isGlobal) {
+                        globalList.push(instr);
+                        return;
+                    }
+                    if (!map[rcId]) {
+                        map[rcId] = { id: rcId, center: center, instructions: [], categories: new Set() };
+                    }
+                    map[rcId].instructions.push(instr);
+                    map[rcId].categories.add(instr.category);
+                });
+
+                allCenters = Object.values(map);
+                globalInstructions = globalList;
+            }
+
+            function findCenter(id) {
+                var sid = String(id);
+                return allCenters.find(function(c) { return String(c.id) === sid; });
+            }
+
+            // =========================================================
+            // ОТОБРАЖЕНИЕ СПИСКА РЦ
+            // =========================================================
+            function renderCenters(query) {
+                var list = document.getElementById('centersList');
+                var norm = normalize(query || '');
+                list.innerHTML = '';
+                if (!allCenters.length) {
+                    list.innerHTML = '<div class="latest-empty">📭 Данные не найдены.</div>';
+                    return;
+                }
+                var filtered = allCenters.filter(function(item) {
+                    if (!norm) return true;
+                    return normalize(item.center).indexOf(norm) !== -1 || normalize(item.id).indexOf(norm) !== -1;
+                });
+                if (!filtered.length) {
+                    list.innerHTML = '<div class="latest-empty">🔍 РЦ не найден.</div>';
+                    return;
+                }
+                filtered.forEach(function(item) {
+                    var btn = document.createElement('button');
+                    btn.textContent = item.center + ' (' + item.instructions.length + ')';
+                    btn.onclick = function() { showInstructions(item.id, true); };
+                    list.appendChild(btn);
+                });
+            }
+
+            // =========================================================
+            // ОТОБРАЖЕНИЕ ИНСТРУКЦИЙ (аккордеон)
+            // =========================================================
+            function showInstructions(id, updateUrl) {
+                var center = findCenter(id);
+                if (!center) { alert('РЦ не найден'); return; }
+                currentCenterId = id;
+                allAccordionItems = [];
+                hideAll();
+                document.getElementById('screen-instructions').classList.remove('hidden');
+                var total = center.instructions.length + globalInstructions.length;
+                document.getElementById('centerHeader').innerHTML = '🏭 ' + center.center +
+                    ' <span style="font-size:13px;font-weight:400;color:#666;">(' + total + ')</span>';
+                document.getElementById('searchInsideInput').value = '';
+                document.getElementById('expandAllBtn').textContent = '📂 Развернуть всё';
+                currentQuery = '';
+                var list = document.getElementById('instructionsList');
+                list.innerHTML =
+                    '<div class="loading"><div class="loading-spinner"></div><div style="margin-top:10px;">Загрузка инструкций...</div></div>';
+                setTimeout(function() {
+                    renderInstructions(center, '');
+                }, 150);
+
+                if (updateUrl) {
+                    var url = new URL(window.location.href);
+                    url.searchParams.set('rc', center.id);
+                    history.replaceState(null, '', url.toString());
+                }
+
+                var searchInside = document.getElementById('searchInsideInput');
+                searchInside.oninput = function() {
+                    currentQuery = this.value.trim();
+                    renderInstructions(center, currentQuery);
+                };
+            }
+
+            function renderInstructions(center, query) {
+                var list = document.getElementById('instructionsList');
+                var norm = normalize(query || '');
+                list.innerHTML = '';
+                allAccordionItems = [];
+
+                var allInstr = center.instructions.slice();
+                if (globalInstructions.length) allInstr = allInstr.concat(globalInstructions);
+
+                if (norm) {
+                    allInstr = allInstr.filter(function(item) {
+                        return normalize(item.title).indexOf(norm) !== -1 ||
+                            normalize(item.note).indexOf(norm) !== -1;
+                    });
+                }
+
+                document.getElementById('instructionsCount').textContent = allInstr.length;
+
+                if (!allInstr.length) {
+                    list.className = 'latest-empty';
+                    list.innerHTML = query ? '🔍 Ничего не найдено' : '📭 Инструкции отсутствуют';
+                    return;
+                }
+                list.className = '';
+
+                var local = allInstr.filter(function(i) { return !i.isGlobal; });
+                var global = allInstr.filter(function(i) { return i.isGlobal; });
+
+                function createGroup(instructions, isGlobalGroup) {
+                    if (!instructions.length) return;
+                    var grouped = {};
+                    instructions.forEach(function(item) {
+                        var cat = item.category || 'Без категории';
+                        if (!grouped[cat]) grouped[cat] = [];
+                        grouped[cat].push(item);
+                    });
+                    var sortedCats = Object.keys(grouped).sort();
+
+                    sortedCats.forEach(function(cat) {
+                        var items = grouped[cat];
+                        var accordion = document.createElement('div');
+                        accordion.className = 'accordion-item';
+
+                        var header = document.createElement('div');
+                        header.className = 'accordion-header' + (isGlobalGroup ? ' global-header' : '');
+                        header.innerHTML = '<span>' + (isGlobalGroup ? '🌐' : '📂') + ' ' + cat +
+                            ' <span class="badge">' + items.length + '</span></span><span class="arrow">▼</span>';
+                        accordion.appendChild(header);
+
+                        var body = document.createElement('div');
+                        body.className = 'accordion-body';
+                        var inner = document.createElement('div');
+                        inner.className = 'accordion-body-inner';
+
+                        items.forEach(function(instr) {
+                            var card = document.createElement('div');
+                            card.className = 'instruction-card' + (isGlobalGroup ? ' global' : '');
+
+                            var titleDiv = document.createElement('div');
+                            titleDiv.className = 'instruction-title';
+                            if (norm) {
+                                titleDiv.innerHTML = highlightText(instr.title, query);
+                            } else {
+                                titleDiv.textContent = instr.title;
+                            }
+
+                            if (isGlobalGroup) {
+                                var gb = document.createElement('span');
+                                gb.className = 'global-badge';
+                                gb.textContent = 'Общая';
+                                titleDiv.appendChild(gb);
+                            }
+
+                            if (isNew(instr.dateAdded)) {
+                                var nb = document.createElement('span');
+                                nb.className = 'new-badge';
+                                nb.textContent = 'НОВОЕ';
+                                titleDiv.appendChild(nb);
+                            }
+
+                            card.appendChild(titleDiv);
+
+                            var meta = document.createElement('div');
+                            meta.className = 'instruction-meta';
+                            if (instr.dateAdded) {
+                                var dateSpan = document.createElement('span');
+                                // ======= ИСПРАВЛЕННЫЙ ФОРМАТ ДАТЫ =======
+                                var d = new Date(instr.dateAdded);
+                                var day = String(d.getDate()).padStart(2, '0');
+                                var month = String(d.getMonth() + 1).padStart(2, '0');
+                                var year = d.getFullYear();
+                                dateSpan.textContent = '📅 ' + day + '.' + month + '.' + year;
+                                meta.appendChild(dateSpan);
+                            }
+                            card.appendChild(meta);
+
+                            if (instr.note) {
+                                var noteDiv = document.createElement('div');
+                                noteDiv.className = 'instruction-note';
+                                if (norm) {
+                                    noteDiv.innerHTML = '📌 ' + highlightText(instr.note, query);
+                                } else {
+                                    noteDiv.textContent = '📌 ' + instr.note;
+                                }
+                                card.appendChild(noteDiv);
+                            }
+
+                            var link = document.createElement('a');
+                            link.className = 'instruction-link ' + (isGlobalGroup ? 'warning' : 'success');
+                            link.href = instr.url || '#';
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+                            link.textContent = '📄 Открыть PDF';
+
+                            link.addEventListener('click', function(e) {
+                                queueView(center.id, instr.title);
+                            });
+
+                            card.appendChild(link);
+                            inner.appendChild(card);
+                        });
+
+                        body.appendChild(inner);
+                        accordion.appendChild(body);
+
+                        header.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            body.classList.toggle('open');
+                            var arrow = this.querySelector('.arrow');
+                            if (arrow) arrow.classList.toggle('open');
+                            updateExpandAllButton();
+                        });
+
+                        list.appendChild(accordion);
+                        allAccordionItems.push({ header: header, body: body });
+                    });
+                }
+
+                if (local.length) {
+                    var titleDiv = document.createElement('div');
+                    titleDiv.className = 'center-instructions-title';
+                    titleDiv.textContent = '📋 Инструкции РЦ ' + center.center;
+                    list.appendChild(titleDiv);
+                    createGroup(local, false);
+                }
+
+                if (global.length) {
+                    var hr = document.createElement('hr');
+                    hr.style.cssText = 'margin:16px 0 8px 0;border:none;border-top:1px solid #eee;';
+                    list.appendChild(hr);
+                    createGroup(global, true);
+                }
+
+                if (norm) {
+                    setTimeout(expandAll, 50);
+                }
+            }
+
+            // =========================================================
+            // УПРАВЛЕНИЕ АККОРДЕОНОМ
+            // =========================================================
+            function toggleAllAccordion() {
+                var btn = document.getElementById('expandAllBtn');
+                var allOpen = allAccordionItems.every(function(item) { return item.body.classList.contains('open'); });
+                if (allOpen) {
+                    collapseAll();
+                    btn.textContent = '📂 Развернуть всё';
+                } else {
+                    expandAll();
+                    btn.textContent = '📁 Свернуть всё';
+                }
+            }
+
+            function expandAll() {
+                allAccordionItems.forEach(function(item) {
+                    item.body.classList.add('open');
+                    var arrow = item.header.querySelector('.arrow');
+                    if (arrow) arrow.classList.add('open');
+                });
+                document.getElementById('expandAllBtn').textContent = '📁 Свернуть всё';
+            }
+
+            function collapseAll() {
+                allAccordionItems.forEach(function(item) {
+                    item.body.classList.remove('open');
+                    var arrow = item.header.querySelector('.arrow');
+                    if (arrow) arrow.classList.remove('open');
+                });
+                document.getElementById('expandAllBtn').textContent = '📂 Развернуть всё';
+            }
+
+            function updateExpandAllButton() {
+                var btn = document.getElementById('expandAllBtn');
+                if (!btn) return;
+                var allOpen = allAccordionItems.every(function(item) { return item.body.classList.contains('open'); });
+                var allClosed = allAccordionItems.every(function(item) { return !item.body.classList.contains('open'); });
+                if (allOpen) btn.textContent = '📁 Свернуть всё';
+                else if (allClosed) btn.textContent = '📂 Развернуть всё';
+                else btn.textContent = '📂 Развернуть всё';
+            }
+
+            // =========================================================
+            // НАВИГАЦИЯ
+            // =========================================================
+            function showCentersScreen() {
+                hideAll();
+                document.getElementById('screen-centers').classList.remove('hidden');
+                document.getElementById('searchInput').value = '';
+                renderCenters('');
+                var url = new URL(window.location.href);
+                url.searchParams.delete('rc');
+                history.replaceState(null, '', url.toString());
+            }
+
+            function hideAll() {
+                document.getElementById('screen-centers').classList.add('hidden');
+                document.getElementById('screen-instructions').classList.add('hidden');
+            }
+
+            function getRcIdFromUrl() {
+                var params = new URLSearchParams(window.location.search);
+                return params.get('rc') || '';
+            }
+
+            function normalize(text) {
+                return String(text || '').toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ').trim();
+            }
+
+            // =========================================================
+            // ЗАПУСК
+            // =========================================================
+            window.onload = function() {
+                document.getElementById('searchInput').addEventListener('input', function() {
+                    renderCenters(this.value.trim());
+                });
+                loadDataFromSheet();
+            };
+
+            window.showCentersScreen = showCentersScreen;
+            window.toggleAllAccordion = toggleAllAccordion;
+            window.loadDataFromSheet = loadDataFromSheet;
+
+        })();
+    </script>
+
+</body>
+</html>
